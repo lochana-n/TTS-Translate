@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Text Translator with Speech</title>
+  <style>
+    :root {
+      --primary-color: #3498db;
+      --primary-hover: #2980b9;
+      --text-color: #333;
+      --bg-color: #f5f5f5;
+      --card-bg: white;
+      --border-color: #ddd;
+      --panel-header: #eee;
+      --shadow-color: rgba(0,0,0,0.1);
+      --status-bg: #e8f4fd;
+      --footer-color: #777;
+    }
+
+    [data-theme="dark"] {
+      --primary-color: #2196F3;
+      --primary-hover: #1976D2;
+      --text-color: #e0e0e0;
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
+      --border-color: #333;
+      --panel-header: #2a2a2a;
+      --shadow-color: rgba(0,0,0,0.3);
+      --status-bg: #1e3a5f;
+      --footer-color: #aaa;
+    }
+
+    * {
+      box-sizing: border-box;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      color: var(--text-color);
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: var(--bg-color);
+    }
+
+    h1 {
+      color: var(--text-color);
+      text-align: center;
+      margin-bottom: 30px;
+      font-weight: 500;
+    }
+
+    .container {
+      background-color: var(--card-bg);
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px var(--shadow-color);
+    }
+
+    textarea {
+      width: 100%;
+      height: 150px;
+      padding: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      resize: vertical;
+      font-size: 16px;
+      margin-bottom: 15px;
+      background-color: var(--card-bg);
+      color: var(--text-color);
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .control-group {
+      flex: 1 1 200px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    select, input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 14px;
+      background-color: var(--card-bg);
+      color: var(--text-color);
+    }
+
+    button {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s;
+      margin-right: 10px;
+    }
+
+    button:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .emotion-presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .emotion-preset {
+      padding: 8px 15px;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+
+    .status {
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+      display: none;
+    }
+
+    .status.active {
+      display: block;
+      background-color: var(--status-bg);
+      color: var(--text-color);
+    }
+
+    .main-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .footer {
+      margin-top: 40px;
+      text-align: center;
+      font-size: 14px;
+      color: var(--footer-color);
+    }
+
+    .panels {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .panel {
+      flex: 1 1 400px;
+    }
+
+    .panel-header {
+      background-color: var(--panel-header);
+      padding: 12px;
+      border-radius: 8px 8px 0 0;
+      font-weight: 500;
+    }
+
+    .language-select {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+    }
+
+    .language-select .control-group {
+      flex: 1 1 45%;
+    }
+
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 30px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 30px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 22px;
+      width: 22px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--primary-color);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(30px);
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      font-size: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="theme-toggle">
+    <span class="light-icon">☀️</span>
+    <label class="switch">
+      <input type="checkbox" id="theme-switch">
+      <span class="slider"></span>
+    </label>
+    <span class="dark-icon">🌙</span>
+  </div>
+
+  <div class="container">
+    <div class="top-bar">
+      <div class="logo">
+        <span class="logo-icon">🌐</span>
+        <h1>Text Translator with Speech</h1>
+      </div>
+    </div>
+    
+    <div class="panels">
+    
+      <div class="panel">
+        <div class="panel-header">Input Text</div>
+        <textarea id="source-text" placeholder="Enter your text here to translate...">Hello! This is a text translator with speech capability. Try selecting different languages and hear how it sounds!</textarea>
+        
+        <div class="language-select">
+          <div class="control-group">
+            <label for="source-language">Source Language:</label>
+            <select id="source-language"></select>
+          </div>
+        </div>
+      </div>
+      
+      
+      <div class="panel">
+        <div class="panel-header">Translated Text</div>
+        <textarea id="translated-text" placeholder="Translation will appear here..." readonly></textarea>
+        
+        <div class="language-select">
+          <div class="control-group">
+            <label for="target-language">Target Language:</label>
+            <select id="target-language"></select>
+          </div>
+        </div>
+        
+        <button id="translate-button">Translate</button>
+      </div>
+    </div>
+    
+    <div class="emotion-presets">
+      <button class="emotion-preset" style="background-color: #f39c12; color: white;" onclick="setEmotion('happy')">Happy</button>
+      <button class="emotion-preset" style="background-color: #e74c3c; color: white;" onclick="setEmotion('angry')">Angry</button>
+      <button class="emotion-preset" style="background-color: #3498db; color: white;" onclick="setEmotion('sad')">Sad</button>
+      <button class="emotion-preset" style="background-color: #9b59b6; color: white;" onclick="setEmotion('excited')">Excited</button>
+      <button class="emotion-preset" style="background-color: #2ecc71; color: white;" onclick="setEmotion('calm')">Calm</button>
+    </div>
+
+    <div class="controls">
+      <div class="control-group">
+        <label for="voice-select">Voice:</label>
+        <select id="voice-select"></select>
+      </div>
+      
+      <div class="control-group">
+        <label for="rate">Rate:</label>
+        <input type="range" id="rate" min="0.5" max="2" value="1" step="0.1">
+        <span id="rate-value">1</span>
+      </div>
+      
+      <div class="control-group">
+        <label for="pitch">Pitch:</label>
+        <input type="range" id="pitch" min="0.5" max="2" value="1" step="0.1">
+        <span id="pitch-value">1</span>
+      </div>
+    </div>
+    
+    <div class="main-buttons">
+      <button id="speak-original-button">Speak Original</button>
+      <button id="speak-translated-button">Speak Translated</button>
+      <button id="stop-button">Stop</button>
+    </div>
+    
+    <div class="status" id="status">Initializing...</div>
+  </div>
+  
+  
+
+  <script>
+    // Theme switching functionality
+    const themeSwitch = document.getElementById('theme-switch');
+    
+    // Check for saved theme preference or respect OS preference
+    const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    // Initialize theme
+    if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && prefersDarkScheme.matches)) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      themeSwitch.checked = true;
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+      themeSwitch.checked = false;
+    }
+    
+    // Switch theme when toggle is clicked
+    themeSwitch.addEventListener('change', function() {
+      if (this.checked) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'light');
+        localStorage.setItem('theme', 'light');
+      }
+    });
+
+    // Initialize speech synthesis
+    const synth = window.speechSynthesis;
+    const sourceTextInput = document.getElementById('source-text');
+    const translatedTextInput = document.getElementById('translated-text');
+    const sourceLanguageSelect = document.getElementById('source-language');
+    const targetLanguageSelect = document.getElementById('target-language');
+    const translateButton = document.getElementById('translate-button');
+    const voiceSelect = document.getElementById('voice-select');
+    const rateInput = document.getElementById('rate');
+    const rateValue = document.getElementById('rate-value');
+    const pitchInput = document.getElementById('pitch');
+    const pitchValue = document.getElementById('pitch-value');
+    const speakOriginalButton = document.getElementById('speak-original-button');
+    const speakTranslatedButton = document.getElementById('speak-translated-button');
+    const stopButton = document.getElementById('stop-button');
+    const statusElement = document.getElementById('status');
+    
+    let voices = [];
+    
+    // Emotion presets
+    const emotions = {
+      happy: { rate: 1.2, pitch: 1.5 },
+      angry: { rate: 1.3, pitch: 0.5 },
+      sad: { rate: 0.8, pitch: 0.7 },
+      excited: { rate: 1.5, pitch: 1.8 },
+      calm: { rate: 0.9, pitch: 0.9 }
+    };
+    
+    // Language data
+    const languages = {
+      'auto': 'Automatic',
+      'af': 'Afrikaans',
+      'sq': 'Albanian',
+      'am': 'Amharic',
+      'ar': 'Arabic',
+      'hy': 'Armenian',
+      'az': 'Azerbaijani',
+      'eu': 'Basque',
+      'be': 'Belarusian',
+      'bn': 'Bengali',
+      'bs': 'Bosnian',
+      'bg': 'Bulgarian',
+      'ca': 'Catalan',
+      'ceb': 'Cebuano',
+      'ny': 'Chichewa',
+      'zh-cn': 'Chinese Simplified',
+      'zh-tw': 'Chinese Traditional',
+      'co': 'Corsican',
+      'hr': 'Croatian',
+      'cs': 'Czech',
+      'da': 'Danish',
+      'nl': 'Dutch',
+      'en': 'English',
+      'eo': 'Esperanto',
+      'et': 'Estonian',
+      'tl': 'Filipino',
+      'fi': 'Finnish',
+      'fr': 'French',
+      'fy': 'Frisian',
+      'gl': 'Galician',
+      'ka': 'Georgian',
+      'de': 'German',
+      'el': 'Greek',
+      'gu': 'Gujarati',
+      'ht': 'Haitian Creole',
+      'ha': 'Hausa',
+      'haw': 'Hawaiian',
+      'iw': 'Hebrew',
+      'hi': 'Hindi',
+      'hmn': 'Hmong',
+      'hu': 'Hungarian',
+      'is': 'Icelandic',
+      'ig': 'Igbo',
+      'id': 'Indonesian',
+      'ga': 'Irish',
+      'it': 'Italian',
+      'ja': 'Japanese',
+      'jw': 'Javanese',
+      'kn': 'Kannada',
+      'kk': 'Kazakh',
+      'km': 'Khmer',
+      'ko': 'Korean',
+      'ku': 'Kurdish (Kurmanji)',
+      'ky': 'Kyrgyz',
+      'lo': 'Lao',
+      'la': 'Latin',
+      'lv': 'Latvian',
+      'lt': 'Lithuanian',
+      'lb': 'Luxembourgish',
+      'mk': 'Macedonian',
+      'mg': 'Malagasy',
+      'ms': 'Malay',
+      'ml': 'Malayalam',
+      'mt': 'Maltese',
+      'mi': 'Maori',
+      'mr': 'Marathi',
+      'mn': 'Mongolian',
+      'my': 'Myanmar (Burmese)',
+      'ne': 'Nepali',
+      'no': 'Norwegian',
+      'ps': 'Pashto',
+      'fa': 'Persian',
+      'pl': 'Polish',
+      'pt': 'Portuguese',
+      'ma': 'Punjabi',
+      'ro': 'Romanian',
+      'ru': 'Russian',
+      'sm': 'Samoan',
+      'gd': 'Scots Gaelic',
+      'sr': 'Serbian',
+      'st': 'Sesotho',
+      'sn': 'Shona',
+      'sd': 'Sindhi',
+      'si': 'Sinhala',
+      'sk': 'Slovak',
+      'sl': 'Slovenian',
+      'so': 'Somali',
+      'es': 'Spanish',
+      'su': 'Sundanese',
+      'sw': 'Swahili',
+      'sv': 'Swedish',
+      'tg': 'Tajik',
+      'ta': 'Tamil',
+      'te': 'Telugu',
+      'th': 'Thai',
+      'tr': 'Turkish',
+      'uk': 'Ukrainian',
+      'ur': 'Urdu',
+      'uz': 'Uzbek',
+      'vi': 'Vietnamese',
+      'cy': 'Welsh',
+      'xh': 'Xhosa',
+      'yi': 'Yiddish',
+      'yo': 'Yoruba',
+      'zu': 'Zulu'
+    };
+    
+    function setEmotion(emotion) {
+      const preset = emotions[emotion];
+      if (preset) {
+        rateInput.value = preset.rate;
+        rateValue.textContent = preset.rate;
+        pitchInput.value = preset.pitch;
+        pitchValue.textContent = preset.pitch;
+        
+        showStatus(`Emotion set to ${emotion}`);
+      }
+    }
+    
+    function showStatus(message) {
+      statusElement.textContent = message;
+      statusElement.classList.add('active');
+      setTimeout(() => {
+        statusElement.classList.remove('active');
+      }, 3000);
+    }
+    
+    // Populate voice list
+    function populateVoiceList() {
+      voices = synth.getVoices();
+      voiceSelect.innerHTML = '';
+      
+      voices.forEach((voice) => {
+        const option = document.createElement('option');
+        option.textContent = `${voice.name} (${voice.lang})`;
+        option.setAttribute('data-lang', voice.lang);
+        option.setAttribute('data-name', voice.name);
+        voiceSelect.appendChild(option);
+      });
+    }
+    
+    // Populate language lists
+    function populateLanguageLists() {
+      sourceLanguageSelect.innerHTML = '';
+      targetLanguageSelect.innerHTML = '';
+      
+      Object.entries(languages).forEach(([code, name]) => {
+        const sourceOption = document.createElement('option');
+        sourceOption.value = code;
+        sourceOption.textContent = name;
+        sourceLanguageSelect.appendChild(sourceOption);
+        
+        const targetOption = document.createElement('option');
+        targetOption.value = code;
+        targetOption.textContent = name;
+        targetLanguageSelect.appendChild(targetOption);
+      });
+      
+      // Set defaults
+      sourceLanguageSelect.value = 'auto';
+      targetLanguageSelect.value = 'en';
+    }
+    
+    // Check if voices are available immediately
+    populateVoiceList();
+    populateLanguageLists();
+    
+    // Chrome loads voices asynchronously
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = populateVoiceList;
+    }
+    
+    // Event listeners for sliders
+    rateInput.addEventListener('input', () => {
+      rateValue.textContent = rateInput.value;
+    });
+    
+    pitchInput.addEventListener('input', () => {
+      pitchValue.textContent = pitchInput.value;
+    });
+    
+    // Translation function
+    async function translateText() {
+      const sourceText = sourceTextInput.value;
+      const sourceLanguage = sourceLanguageSelect.value;
+      const targetLanguage = targetLanguageSelect.value;
+      
+      if (sourceText === '') {
+        showStatus('Please enter text to translate');
+        return;
+      }
+      
+      showStatus('Translating...');
+      
+      try {
+        const response = await fetch('http://localhost:3000/api/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            text: sourceText, 
+            from: sourceLanguage, 
+            to: targetLanguage 
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Translation service unavailable');
+        }
+        
+        const data = await response.json();
+        translatedTextInput.value = data.translatedText;
+        showStatus('Translation complete');
+      } catch (error) {
+        console.error('Translation error:', error);
+        
+        
+        setTimeout(() => {
+          if (sourceLanguage === targetLanguage || (sourceLanguage === 'auto' && detectLanguage(sourceText) === targetLanguage)) {
+            translatedTextInput.value = sourceText;
+          } else {
+            
+            translatedTextInput.value = `[Translated to ${languages[targetLanguage]}]: ${sourceText}`;
+          }
+          showStatus('Translation complete (demo mode)');
+        }, 1000);
+      }
+    }
+    
+ 
+    function detectLanguage(text) {
+     
+      return 'en';
+    }
+    
+ 
+    function speak(text, isTranslated) {
+      if (synth.speaking) {
+        synth.cancel();
+      }
+      
+      if (text !== '') {
+        const utterance = new SpeechSynthesisUtterance(text);
+        
+        
+        utterance.rate = parseFloat(rateInput.value);
+        utterance.pitch = parseFloat(pitchInput.value);
+        
+        
+        const selectedVoice = voiceSelect.selectedOptions[0].getAttribute('data-name');
+        const voice = voices.find(v => v.name === selectedVoice);
+        if (voice) {
+          utterance.voice = voice;
+        }
+        
+        
+        if (isTranslated) {
+          const targetLang = targetLanguageSelect.value;
+       
+          const langCode = targetLang.split('-')[0];
+          
+          
+          const matchingVoice = voices.find(v => v.lang.toLowerCase().startsWith(langCode));
+          if (matchingVoice) {
+            utterance.voice = matchingVoice;
+          }
+        }
+        
+      
+        utterance.onstart = () => {
+          showStatus('Speaking...');
+        };
+        
+        utterance.onend = () => {
+          showStatus('Finished speaking');
+        };
+        
+        utterance.onerror = (event) => {
+          showStatus(`Error: ${event.error}`);
+        };
+        
+        synth.speak(utterance);
+      } else {
+        showStatus('No text to speak');
+      }
+    }
+    
+   
+    translateButton.addEventListener('click', translateText);
+    
+    speakOriginalButton.addEventListener('click', () => {
+      speak(sourceTextInput.value, false);
+    });
+    
+    speakTranslatedButton.addEventListener('click', () => {
+      if (translatedTextInput.value === '') {
+        showStatus('Please translate text first');
+      } else {
+        speak(translatedTextInput.value, true);
+      }
+    });
+    
+   
+    stopButton.addEventListener('click', () => {
+      if (synth.speaking) {
+        synth.cancel();
+        showStatus('Speech stopped');
+      }
+    });
+    
+    
+    setTimeout(() => {
+      if (voices.length > 0) {
+        showStatus('Ready');
+      } else {
+        showStatus('Warning: No voices available');
+      }
+    }, 1000);
+  </script>
+</body>
+</html>
